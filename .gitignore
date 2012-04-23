@@ -1,3 +1,6 @@
+cli_post_http
+Makefile
+cli_post_http.pro.user
 # Compiled Object files
 *.slo
 *.lo
