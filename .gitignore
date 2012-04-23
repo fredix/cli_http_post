@@ -1,6 +1,7 @@
 cli_post_http
 Makefile
 cli_post_http.pro.user
+moc_main.cpp
 # Compiled Object files
 *.slo
 *.lo
