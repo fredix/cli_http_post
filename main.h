@@ -47,7 +47,7 @@ private:
     QFile *m_file;
     QByteArray *m_content;
     QNetworkReply *m_reply;
-    QUrl url;
+    QUrl m_url;
     QNetworkRequest m_request;
     QHttpRequestHeader m_header;
     QAuthenticator *m_auth;

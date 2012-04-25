@@ -17,7 +17,7 @@ void Http_response::receiveResponse(int http_code)
 
 
 
-Push::Push(QString url, QString file_path)
+Push::Push(QString url, QString file_path) : m_server(url)
 {
     //m_auth->setUser("aaa");
     m_network = new QNetworkAccessManager(this);
@@ -25,18 +25,11 @@ Push::Push(QString url, QString file_path)
     m_http_error = 0;
     m_request.setRawHeader("content-type", "application/xml");
 
+    m_file = new QFile (file_path);
 
+    if (!m_file->open(QIODevice::ReadOnly | QIODevice::Text))
+        return;
 
-/*
-    QFile file("in.txt");
-         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-             return;
-
-         while (!file.atEnd()) {
-             QByteArray line = file.readLine();
-             process_line(line);
-
-*/
 
     this->connect( m_network, SIGNAL(finished(QNetworkReply *)),SLOT(slotRequestFinished(QNetworkReply *)));
 
@@ -65,7 +58,7 @@ void Push::Payload_http() {
 
     m_request.setRawHeader("Authorization", "Basic " + QByteArray((m_credentials).toAscii()).toBase64());
     m_request.setRawHeader("content-type", "multipart/form-data");
-    m_request.setRawHeader("Host", url.encodedHost());
+    m_request.setRawHeader("Host", m_url.encodedHost());
 
     m_request.setRawHeader("User-Agent", "geekast");
     m_request.setRawHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
@@ -85,11 +78,18 @@ void Push::Payload_http() {
 
 
     // UPDATE
-    url.setUrl("http://" + m_server + "/payload/create/");
+    m_url.setUrl("http://" + m_server + "/payload/create/");
     //url.setUrl(m_server + "/host/update/");
     qDebug() << "PAYLOAD UPDATE" << " SERVER : " << m_server << "pass : " << m_credentials;
-    m_request.setUrl(url);
-    m_reply = m_network->post(m_request, "json.toUtf8()");
+    m_request.setUrl(m_url);
+
+
+    QByteArray data = m_file->readAll();
+
+    qDebug() << "DATA FILE : " << data;
+
+
+    m_reply = m_network->post(m_request, data);
 
 
     this->connect(m_reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(replyError(QNetworkReply::NetworkError)));
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
     }
 
 
-    Push l_push;
+    Push l_push(param_url, param_file);
     Http_response l_http_response;
 
     l_push.m_server = param_url;
