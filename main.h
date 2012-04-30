@@ -24,7 +24,7 @@ class Push : public QObject
     Q_OBJECT
 
 public:
-    Push(QString url, QString file_path);
+    Push(QString url, QString file_path, QString credentials);
     ~Push();
     void Payload_http();
 

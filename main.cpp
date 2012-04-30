@@ -17,7 +17,7 @@ void Http_response::receiveResponse(int http_code)
 
 
 
-Push::Push(QString url, QString file_path) : m_server(url)
+Push::Push(QString url, QString file_path, QString credentials) : m_server(url), m_credentials(credentials)
 {
     //m_auth->setUser("aaa");
     m_network = new QNetworkAccessManager(this);
@@ -51,14 +51,12 @@ void Push::Payload_http() {
     qDebug() << "payload and pass : " << m_credentials;
 
 
-    QDateTime timestamp = QDateTime::currentDateTime();
-    QString s_timestamp = "geekast_" + timestamp.toString("hhmmssz-ddMMyyyy")  + ".json";
+    if (m_credentials.length() != 0)
+        m_request.setRawHeader("Authorization", "Basic " + QByteArray((m_credentials).toAscii()).toBase64());
 
 
-
-    m_request.setRawHeader("Authorization", "Basic " + QByteArray((m_credentials).toAscii()).toBase64());
     m_request.setRawHeader("content-type", "multipart/form-data");
-    m_request.setRawHeader("Host", m_url.encodedHost());
+    //m_request.setRawHeader("Host", m_url.encodedHost());
 
     m_request.setRawHeader("User-Agent", "geekast");
     m_request.setRawHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
@@ -67,7 +65,6 @@ void Push::Payload_http() {
     m_request.setRawHeader("Accept-Charset", "windows-1251,utf-8;q=0.7,*;q=0.7");
     m_request.setRawHeader("Keep-Alive", "300");
     m_request.setRawHeader("Connection", "keep-alive");
-    m_request.setRawHeader("X-payloadfilename", s_timestamp.toUtf8());
     //request.setRawHeader("Referer", QString("http://%1data.cod.ru/").arg(region).toAscii());
     //m_request.setRawHeader("Content-Type", QByteArray("multipart/form-data; boundary=").append(boundaryRegular));
 
@@ -78,18 +75,18 @@ void Push::Payload_http() {
 
 
     // UPDATE
-    m_url.setUrl("http://" + m_server + "/payload/create/");
+    //m_url.setUrl("http://" + m_server + "/payload/create/");
     //url.setUrl(m_server + "/host/update/");
-    qDebug() << "PAYLOAD UPDATE" << " SERVER : " << m_server << "pass : " << m_credentials;
-    m_request.setUrl(m_url);
+    qDebug() << "PAYLOAD UPDATE" << "URL : " << m_server << "pass : " << m_credentials;
+    m_request.setUrl(m_server);
 
 
     QByteArray data = m_file->readAll();
 
-    qDebug() << "DATA FILE : " << data;
+    //qDebug() << "DATA FILE : " << data;
 
 
-    m_reply = m_network->post(m_request, data);
+    m_reply = m_network->put(m_request, data);
 
 
     this->connect(m_reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(replyError(QNetworkReply::NetworkError)));
@@ -156,6 +153,7 @@ int main(int argc, char *argv[])
     QString param_url;
     QString param_file;
     QUrl url;
+    QString param_credentials;
 
     QCoreApplication a(argc, argv);
 
@@ -171,6 +169,11 @@ int main(int argc, char *argv[])
     options.alias("url", "url");
     options.add("file", "set the absolute file path", QxtCommandOptions::Required);
     options.alias("file", "file");
+
+    options.add("credentials", "set the optional credentials", QxtCommandOptions::Required);
+    options.alias("credentials", "credentials");
+
+
 
     options.add("verbose", "show more information about the process; specify twice for more detail", QxtCommandOptions::AllowMultiple);
     options.alias("verbose", "v");
@@ -204,7 +207,12 @@ int main(int argc, char *argv[])
     }
 
 
-    Push l_push(param_url, param_file);
+    if(options.count("credentials")) {
+        param_credentials = options.value("credentials").toString();
+    }
+
+
+    Push l_push(param_url, param_file, param_credentials);
     Http_response l_http_response;
 
     l_push.m_server = param_url;
